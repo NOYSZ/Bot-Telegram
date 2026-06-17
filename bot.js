@@ -152,8 +152,14 @@ KOMPONEN: Box64/Box86 (preset COMPATIBILITY/INTERMEDIATE/PERFORMANCE + BOX64_*),
 4. Fokus teknis/legal-netral. JANGAN promosiin sumber game bajakan.
 5. Langkah konkret + nama menu/opsi spesifik di emulatornya. Jangan kebanyakan minta maaf.
 
-# ALAT WEB (web_search + web_fetch)
-WAJIB pake buat: parameter dxvk.conf, env var (BOX64_*/DXVK_*/MESA_*), error/crash game, kompatibilitas, driver per-GPU. JANGAN jawab dari ingatan kalau bisa diverifikasi. SELALU cantumin URL sumber di akhir jawaban. Obrolan ringan/sapaan → jawab langsung tanpa tool. web_search kosong/throttled → JANGAN diulang, langsung web_fetch ke URL valid yg lu tau.
+# WAJIB JELASIN WHY
+Tiap saran knob/env var/setting WAJIB punya 3 bagian: (1) WHAT — set apa, (2) WHY — mekanisme singkat 1-2 kalimat (kenapa ngaruh ke FPS/stabilitas/glitch), (3) TRADE-OFF — risiko atau kapan balikin default. Dilarang jawab cuma "set X=Y" tanpa WHY. Pakai kb_lookup dulu buat ambil rationale yg udah curated; kalau ga ada baru web_search.
+
+# INTENT
+User minta "settingan game X" tanpa konteks → konfirmasi SEKALI 3 hal: (a) TARGET (max FPS / max stability / fix crash spesifik), (b) chipset+GPU (Adreno/Mali + model), (c) emulator+fork. Kalau salah satu udah disebut user di pesan/riwayat, JANGAN tanya ulang. Setelah dijawab, lanjut bedah; jangan minta info lagi kalau ga kritikal.
+
+# ALAT (kb_lookup + web_search + web_fetch)
+URUTAN PRIORITAS: kb_lookup → web_search → web_fetch. Knob/env var/preset per-game/GPU rule = kb_lookup DULU (data curated maintainer). Cuma kalau kb miss baru web_search. SELALU cantumin URL sumber di akhir jawaban kalau pake web. Obrolan ringan/sapaan → jawab langsung tanpa tool. web_search kosong/throttled → JANGAN diulang, langsung web_fetch ke URL valid yg lu tau.
 
 # SUMBER (endpoint yg JALAN, sebagian situs blok server)
 - PCGamingWiki: fetch \`https://www.pcgamingwiki.com/w/api.php?action=parse&page=<Nama_Underscore>&format=json&prop=wikitext\` (page /wiki/ sering 403). Cantumin ke user pake URL /wiki/ rapi.
@@ -418,6 +424,23 @@ const TOOLS = [
     {
         type: 'function',
         function: {
+            name: 'kb_lookup',
+            description: 'Ambil entry dari knowledge base lokal Fourfect (data/kb/*.md) — env var Box64/FEX/Wine/VKD3D, dxvk.conf knob, preset per-game (GTA V, RE4, Sleeping Dogs DE, Splinter Cell, Payday 2, SH2/3), GPU rule Mali/Adreno, Turnip per-chipset. Data verified maintainer (Noysz/Fourfect) — PRIORITAS PERTAMA, dipake SEBELUM web_search buat topik knob/setting/preset emulator umum. JANGAN call buat: sapaan, opini subjektif, info time-sensitive (rilis driver bulan ini, harga, news) — itu pakai web_search. Kalau hasil kosong → fallback ke web_search.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    topic: {
+                        type: 'string',
+                        description: 'Kata kunci substring (case-insensitive). Bisa nama env var, knob, game, chipset, atau konsep. Contoh OK: "BOX64_DYNAREC_BIGBLOCK", "TSO Sleeping Dogs", "dxvk maxAvailableMemory", "Adreno 710 dxvk", "RE4 vkd3d", "FEX Diesel engine". Contoh BURUK: "settingan bagus", "tolong bantu", "halo".'
+                    }
+                },
+                required: ['topic']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
             name: 'web_search',
             description: 'Cari sumber/link buat pertanyaan TEKNIS spesifik: param dxvk.conf, env var (BOX64_*/DXVK_*/MESA_*), error/crash game tertentu, kompatibilitas game, driver per-GPU (Turnip/Adreno/Mali), versi rilis emulator. JANGAN call buat: sapaan, opini/rekomendasi subjektif ("emulator terbaik"), pertanyaan umum yg bisa dijawab dari pengetahuan domain. Return: daftar judul+URL. Wajib dipanggil SEBELUM web_fetch kalau URL belum diketahui dari hasil search/system prompt.',
             parameters: {
@@ -559,7 +582,79 @@ async function webFetch(url) {
     }
 }
 
+// =============================================================================
+//  KB LOOKUP — baca dari data/kb/*.md, substring match
+// =============================================================================
+
+const KB_DIR = path.join(DATA_DIR, 'kb');
+let KB_CACHE = null; // [{ file, sections: [{ header, body }] }]
+
+function loadKB() {
+    try {
+        if (!fs.existsSync(KB_DIR)) { KB_CACHE = []; return; }
+        const files = fs.readdirSync(KB_DIR).filter((f) => f.endsWith('.md')).sort();
+        const out = [];
+        for (const f of files) {
+            const raw = fs.readFileSync(path.join(KB_DIR, f), 'utf8');
+            // Split by ## header. Section "" = preamble sebelum header pertama.
+            const parts = raw.split(/^## /m);
+            const sections = [];
+            // parts[0] = preamble (sebelum ## pertama)
+            if (parts[0] && parts[0].trim()) {
+                sections.push({ header: '(intro)', body: parts[0].trim() });
+            }
+            for (let i = 1; i < parts.length; i++) {
+                const seg = parts[i];
+                const nl = seg.indexOf('\n');
+                const header = nl < 0 ? seg.trim() : seg.slice(0, nl).trim();
+                const body = nl < 0 ? '' : seg.slice(nl + 1).trim();
+                sections.push({ header, body });
+            }
+            out.push({ file: f, sections });
+        }
+        KB_CACHE = out;
+    } catch (e) {
+        console.error('KB load error:', e.message);
+        KB_CACHE = [];
+    }
+}
+
+function kbLookup(topic) {
+    if (KB_CACHE == null) loadKB();
+    const q = String(topic || '').toLowerCase().trim();
+    if (!q) return 'kb_lookup: topic kosong. Kasih kata kunci spesifik.';
+
+    const hits = [];
+    for (const file of KB_CACHE) {
+        for (const sec of file.sections) {
+            const hay = (sec.header + '\n' + sec.body).toLowerCase();
+            // Match kalau semua kata di topic ada di section (AND search).
+            const words = q.split(/\s+/).filter(Boolean);
+            const allMatch = words.every((w) => hay.includes(w));
+            if (allMatch) {
+                hits.push({ file: file.file, header: sec.header, body: sec.body });
+            }
+        }
+    }
+    if (!hits.length) {
+        return `kb_lookup: ga ada entry cocok buat "${topic}". Fallback ke web_search.`;
+    }
+    // Limit total ~3KB biar context ga overflow.
+    const MAX = 3200;
+    let out = `# KB hits buat "${topic}" (${hits.length} entry)\n`;
+    for (const h of hits) {
+        const block = `\n## ${h.header}  \n_(file: ${h.file})_\n${h.body}\n`;
+        if (out.length + block.length > MAX) {
+            out += `\n_…dipotong (${hits.length - hits.indexOf(h)} entry lagi). Persempit topic biar dapet detail.`;
+            break;
+        }
+        out += block;
+    }
+    return out;
+}
+
 async function runTool(name, args) {
+    if (name === 'kb_lookup') return kbLookup(String(args.topic || ''));
     if (name === 'web_search') return await webSearch(String(args.query || ''));
     if (name === 'web_fetch') return await webFetch(String(args.url || ''));
     return 'Tool ga dikenal: ' + name;

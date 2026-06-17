@@ -6,8 +6,9 @@
 # Dependencies
 node_modules/
 
-# Data runtime bot (history & community KB)
-data/
+# Data runtime bot (history & community KB) — kecuali KB curated
+data/*
+!data/kb/
 
 # Logs
 *.log
