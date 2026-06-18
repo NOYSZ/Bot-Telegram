@@ -1,5 +1,47 @@
-**COPUX V2.0** adalah bot asisten Telegram berbasis AI tingkat lanjut (Node.js) yang dirancang khusus untuk mengelola grup komunitas tech, gaming, dan troubleshooting emulator. Bot ini membawa berbagai fitur "Overpowered", mulai dari *Hybrid Rate Limit* untuk mencegah spam, *Smart Group Sessions* yang membedakan konteks obrolan setiap member, hingga *Web Search 3-Tier* yang digabungkan dengan API Firecrawl untuk membaca (scrape) solusi dari link website secara real-time. Selain itu, COPUX juga dilengkapi *Vision & YouTube Engine* untuk menganalisa screenshot/video, fitur `/addfix` untuk membangun knowledge base komunitas, dan *Auto-Save History* agar memori obrolan bot tetap aman meski server mendadak mati.
+# 🤖 COPUX V2.0
+**Advanced Telegram AI Assistant untuk Komunitas Tech & Emulator**
 
-**Cara Deploy ke VPS/RDP:**
-Untuk mendeploy COPUX ke server (Linux/Windows), pastikan sistem Anda sudah terinstall Git, Node.js (v18+), dan PM2 (`npm install -g pm2`). Buka terminal dan jalankan `git clone https://github.com/NOYSZ/Bot-Telegram.git` lalu masuk ke direktori dengan `cd Bot-Telegram`. Setelah itu, install seluruh dependency dengan perintah `npm install`. Selanjutnya, buat file `.env` di folder utama dan isi dengan variabel wajib: `TELEGRAM_BOT_TOKEN`, `AI_API_KEY`, `FIRECRAWL_API_KEY`, dan `SERPER_API_KEY`. Jika file konfigurasi sudah siap, jalankan bot di background agar aktif 24/7 menggunakan perintah `pm2 start bot.js --name "copux"`. Jangan lupa jalankan `pm2 save` dan `pm2 startup` agar bot dapat menyala otomatis jika server mengalami restart.
+COPUX adalah bot Telegram berbasis Node.js yang dirancang khusus untuk mengelola grup komunitas, menyediakan troubleshooting instan, dan mencari solusi akurat secara real-time.
+
+## ✨ Fitur Overpowered
+- 🛡️ **Hybrid Rate Limit:** Sistem cooldown otomatis anti-spam.
+- 🧠 **Smart Group Sessions:** Membedakan konteks obrolan masing-masing member.
+- 🔍 **Web Search 3-Tier:** Mencari solusi via Serper, Tavily, dan DuckDuckGo.
+- 🕷️ **Firecrawl Integration:** Scrape dan baca isi link secara langsung.
+- 👁️ **Vision & YouTube Engine:** Deteksi teks dari gambar (screenshot error) & bedah video.
+- 💾 **Auto-Save History:** Memori percakapan aman meskipun server restart mendadak.
+
+---
+
+## 🚀 Cara Deploy ke VPS/RDP
+
+**1. Persiapan Sistem**
+Pastikan server Anda sudah terinstall Node.js (v18+), Git, dan PM2:
+```bash
+npm install -g pm2
+```
+
+**2. Clone Repository**
+```bash
+git clone [https://github.com/NOYSZ/Bot-Telegram.git](https://github.com/NOYSZ/Bot-Telegram.git)
+cd Bot-Telegram
+npm install
+```
+
+**3. Konfigurasi Environment**
+Buat file bernama `.env` di folder utama dan isi dengan variabel berikut:
+```env
+TELEGRAM_BOT_TOKEN=
+AI_API_KEY=
+FIRECRAWL_API_KEY=
+SERPER_API_KEY=
+```
+
+**4. Jalankan Bot (24/7)**
+Gunakan PM2 agar bot tetap hidup di background meskipun terminal ditutup:
+```bash
+pm2 start bot.js --name "copux"
+pm2 save
+pm2 startup
+```
 
