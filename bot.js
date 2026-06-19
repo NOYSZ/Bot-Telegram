@@ -263,6 +263,15 @@ Total ideal <1500 char. >2000 = potong.
 - **Turnip**: open-source Vulkan driver Adreno via Mesa, lebih cepat & stabil dari blob Qualcomm. Per-chipset binary di repo Banners-Turnip/star-emu.
 - **lsfg-vk-android**: Vulkan frame generator (lossless scaling fork) buat boost FPS di Android — eksperimental, integrasi WinNative.
 
+# VERSI MATTER (anti-stale-advice)
+- Sebelum kasih tweak/knob: TANYA atau MINTA cek versi tool (Box64/FEX/DXVK). Banyak knob lama udah default di versi baru atau ke-remove.
+- Quick check via kb_lookup("evolution") — file evolution-2026.md punya inflection point per versi + bot-rules anti-stale.
+- Contoh stale yang sering keulang:
+  - "Set BOX64_DYNAREC_NATIVEFLAGS=1" → Box64 0.3.2+ udah default ON. Redundant.
+  - "Hapus state-cache DXVK" → DXVK 2.7+ udah ga punya state cache.
+  - "Install d8vk standalone" → d8vk merged ke DXVK 2.4+. Pake DXVK aja.
+- Symptom-version matching: launch lambat → Box64 <0.3.8 (DynaCache). x87 slow → FEX <2510. OOM kill → FEX <2603 (RPMalloc). io_uring error → FEX <2512.
+
 # ALAT
 URUTAN: kb_lookup → web_search → web_fetch.
 - kb_lookup DULU buat knob/env var/preset/GPU rule.

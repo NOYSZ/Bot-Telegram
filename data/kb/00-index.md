@@ -10,6 +10,19 @@ File ini = peta. Tiap topik linked ke file detail di folder yg sama.
   "kenapa ganti DLL bisa kerja", "GPU spoofing nyentuh apa", "Rambooster placebo bukan", "bedanya
   Wine sama emulator apa", "anti-cheat kenapa ga bisa".
 
+## Forks & ecosystem map (BACA KALAU USER TANYA "fork mana / komponen apa")
+- `forks-landscape.md` — versi + status semua komponen 2026 (Winlator main/CMOD/Bionic Ludashi/GLIBC,
+  Box64/FEX, DXVK/Sarek/VKD3D/d8vk/CNC DDraw/dxwrapper, libadrenotools/Turnip). Quick decision matrix
+  + anti-vaporware list. **PAKE FILE INI** kalau user nanya: "fork mana yang bagus", "X masih hidup ga",
+  "wrapper mana buat game lama", "perlu d8vk standalone ga", "Mali pake DXVK versi berapa".
+
+## Evolution per tool (BACA KALAU USER LAMA PAKE VERSI USANG / NANYA "perlu upgrade ga")
+- `evolution-2026.md` — timeline inflection point DXVK (1.x → 2.7), Box64 (0.1 → 0.4.2), FEX (2107 → 2605).
+  Mobile decision matrix per versi. 7 bot-rules untuk anti-stale-advice (NATIVEFLAGS udah default,
+  state-cache hilang di 2.7, d8vk merged, dst). **PAKE FILE INI** kalau user nanya: "kenapa lambat di
+  HP gw", "upgrade Box64/FEX worth ga", "DynaCache itu apa", "x87 speedup", "io_uring error",
+  "OOM kill FEX", "tweak lama masih ngaruh ga di versi baru".
+
 ## Box64 (CPU translator x86→ARM64, dipake Winlator-type)
 - `box64-envs.md` — BOX64_DYNAREC_*, BOX64_MMAP32, BOX64_AVX, BOX64_NOSIGSEGV, dll.
 
@@ -18,7 +31,12 @@ File ini = peta. Tiap topik linked ke file detail di folder yg sama.
 - `fex-extreme-params.md` — FULL matrix Custom/Extreme params (X87ReducedPrecision, MaxInst, SmallTSCScale, MemcpySetTSO, HalfBarrierTSO, VolatileMetadata, MonoHacks, SMCChecks) + preset COMPATIBILITY/BALANCED/PERFORMANCE.
 
 ## DXVK / DXGI / D3D9-11 (Vulkan translation layer)
-- `dxvk-conf.md` — knob dxvk.conf critical (maxAvailableMemory, deferSurfaceCreation, async, dll).
+- `dxvk-conf.md` — knob dxvk.conf critical buat mobile (maxAvailableMemory, deferSurfaceCreation, async, dll).
+- `dxvk-conf-extras.md` — knob upstream lanjutan: Pipeline Library, Descriptor Heap/Buffer, FP16,
+  GPU spoofing (hideNvidia/AMD/Intel + customDeviceId), D3D8 post-merge d8vk, game-spesifik
+  (Halo CE, SH2 EE, Sims 2, Gothic 3, AquaNox), + DXVK 2.x mobile baseline preset.
+  **PAKE FILE INI** kalau user nanya: "DXVK 2.x bisa di Mali ga", "graphicsPipelineLibrary apa",
+  "kenapa game DX8 jalan tanpa d8vk", "spoof GPU ke Nvidia gimana", knob spesifik per-game.
 - `dxvk-version-per-chipset.md` — DXVK versi mana buat Adreno/Mali apa.
 
 ## VKD3D-Proton (DX12 → Vulkan)
