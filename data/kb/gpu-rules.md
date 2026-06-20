@@ -35,7 +35,7 @@
 - HP super low-end (Helio G35/G37) yg ga sanggup Sarek dynasync.
 
 ### Tier per chipset Mali
-- **Helio G99 / Mali-G57 MC2**: DXVK 1.12 Sarek dynasync + Proton 10 arm64ec + FEX/Box64 PERFORMANCE preset. Realistic FPS: 25-30 medium settings.
+- **Helio G99 / Mali-G57 MC2**: DXVK **Sarek 1.10.3/1.11.1** (canonical Valhall awal, ref evolution-2026) ATAU **1.12 dynasync** (empirical verified, 25-30 fps medium). + Proton 10 arm64ec + FEX/Box64 PERFORMANCE preset.
 - **Dimensity 8020-8200 / Mali-G610**: DXVK 1.7.3 async + Proton 10 arm64ec. Medium-high settings.
 - **Dimensity 8400 Ultra / Mali-G720 MC7**: DXVK **2.5/2.6/2.7 vanilla** (Vulkan 1.3 + GPL support) + Proton-10.0.99-arm64ec + Ludashi 2.9+ (Sarek bundled tapi vanilla cukup). High + HDR. Sarek cuma fallback kalo game spesifik crash di vanilla.
 

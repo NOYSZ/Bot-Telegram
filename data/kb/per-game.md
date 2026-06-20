@@ -16,7 +16,7 @@ Game spesifik yg punya quirk verified.
 ```
 Resolution      : 1024x600
 DirectX         : 10 (force, lebih ringan dari 11)
-DXVK            : 1.7.2 async
+DXVK            : Sarek 1.10.3 / 1.11.1 (canonical), 1.12 dynasync (empirical alt)
 Proton          : wine-10.0-arm64ec
 FEX preset      : PERFORMANCE
 Box64 preset    : PERFORMANCE
@@ -32,7 +32,7 @@ Expected FPS    : 30 fps
 ```
 Resolution      : 1280x720
 DirectX         : 11
-DXVK            : 1.7.3 async
+DXVK            : Sarek 1.12 (canonical — GPL belum support di tier ini)
 Proton          : Proton-10.0.99-arm64ec
 FEX preset      : PERFORMANCE
 Graphic         : Medium-High
