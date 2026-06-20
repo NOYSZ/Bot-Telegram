@@ -45,14 +45,21 @@ Sumber: github.com/{doitsujin/dxvk, ptitSeb/box64, FEX-Emu/FEX}/releases.
 - Memory defrag default ON di Intel Battlemage/Lunar Lake.
 - Mobile take: **panduan lawas "hapus dxvk.cache file" → STALE buat 2.7+**. File state-cache udah ga ada.
 
-### Mobile decision matrix (DXVK)
-| Driver Vulkan user | Pakai |
+### Mobile decision matrix (DXVK) — **[THEORETICAL]**
+**⚠️ Confidence: matrix ini interpolasi spec Mali + DXVK feature req. BUKAN benchmark database.** Pakai sebagai starting point kalau ga ada `[VERIFIED]` per-game preset di `per-game.md`. Per-game empirical SELALU MENANG.
+
+| Driver Vulkan user | Pakai (theoretical) |
 |---|---|
 | Vulkan 1.0/1.1 (Mali pre-Valhall / Adreno < 6xx) | DXVK 1.7.2 atau 1.10.3 fork async |
 | Vulkan 1.1/1.2 (Mali Valhall awal: G57, G68) | DXVK Sarek 1.10.3 / 1.11.1 |
 | Vulkan 1.2 + GPL ga ada (Mali G610/G715 driver tua) | DXVK Sarek 1.12 |
 | Vulkan 1.3 + GPL ada (Adreno 7xx, Mali G720+, Turnip baru) | DXVK 2.5/2.6/2.7 vanilla |
 | Adreno + adrenotools custom Turnip | DXVK 2.5+ |
+
+**[REVEALED PREFERENCE]** signal komunitas yang LEBIH KUAT dari matrix di atas: StevenMXZ Winlator-Contents CDN ship `dxvk-11.1-sarek-async.wcp` sebagai default Mali. Maintainer udah test cross-device. Itu data komunitas, bukan teori. Untuk Mali default tanpa data per-game = Sarek 1.10.3-1.12, BUKAN vanilla 2.x.
+
+**Empirical override examples (ke-test Noysz):**
+- Helio G99 + GTA V DX10 1024x600 Medium = **DXVK 1.7.2 async** > Sarek 1.12 (BCn emu Sarek over-burden Mali-G57 weak CPU)
 
 ---
 

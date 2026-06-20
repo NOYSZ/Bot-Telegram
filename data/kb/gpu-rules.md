@@ -35,9 +35,9 @@
 - HP super low-end (Helio G35/G37) yg ga sanggup Sarek dynasync.
 
 ### Tier per chipset Mali
-- **Helio G99 / Mali-G57 MC2**: DXVK **Sarek 1.10.3/1.11.1** (canonical Valhall awal, ref evolution-2026) ATAU **1.12 dynasync** (empirical verified, 25-30 fps medium). + Proton 10 arm64ec + FEX/Box64 PERFORMANCE preset.
+- **Helio G99 / Mali-G57 MC2**: **[VERIFIED — Noysz, GTA V DX10 1024x600 Medium]** DXVK **1.7.2 async** (terbukti lebih mulus daripada Sarek 1.12; BCn emu Sarek over-burden Mali-G57 CPU). + Proton 10 arm64ec + FEX/Box64 PERFORMANCE preset. **[THEORETICAL alt]** Sarek 1.10.3/1.11.1 dari tier matrix — belum ke-bench oleh komunitas Noysz.
 - **Dimensity 8020-8200 / Mali-G610**: DXVK 1.7.3 async + Proton 10 arm64ec. Medium-high settings.
-- **Dimensity 8400 Ultra / Mali-G720 MC7**: DXVK **2.5/2.6/2.7 vanilla** (Vulkan 1.3 + GPL support) + Proton-10.0.99-arm64ec + Ludashi 2.9+ (Sarek bundled tapi vanilla cukup). High + HDR. Sarek cuma fallback kalo game spesifik crash di vanilla.
+- **Dimensity 8400 Ultra / Mali-G720 MC7**: **[VERIFIED]** baseline DXVK 1.7.3 async + Proton-10.0.99-arm64ec + Ludashi 2.9+. **[THEORETICAL]** DXVK 2.5/2.6/2.7 vanilla mestinya jalan (Vulkan 1.3+GPL ada) tapi belum ada bench public. Sampai ada empirical data, default = baseline verified.
 
 ---
 
@@ -49,14 +49,19 @@ Mali Valhall TIER LAMA secara native miss:
 
 **Mali tier BARU (G720+, driver 2025+)** udah ada BCn native + `VK_EXT_graphics_pipeline_library` → DXVK vanilla jalan. Sarek opsional, BUKAN mandatory.
 
-Decision matrix (sumber canonical: `evolution-2026.md`):
-| Mali tier | Vulkan | DXVK |
-|-----------|--------|------|
-| Valhall awal (G57, G68, Helio G99) | 1.1/1.2 | DXVK Sarek **1.10.3 / 1.11.1** |
-| G610/G715 (Dim 8020-8200) + GPL belum support | 1.2 | DXVK Sarek **1.12** |
-| **G720+ (Dim 8400 Ultra, G725, Immortalis G720/G925) + GPL ada** | **1.3** | DXVK **2.5/2.6/2.7 vanilla** |
+**[THEORETICAL]** Decision matrix (interpolasi spec Mali + DXVK feature reqs — **BELUM** dari bench database):
+| Mali tier | Vulkan | DXVK (theoretical) |
+|-----------|--------|--------------------|
+| Valhall awal (G57, G68, Helio G99) | 1.1/1.2 | Sarek **1.10.3 / 1.11.1** (architectural) |
+| G610/G715 (Dim 8020-8200) + GPL belum support | 1.2 | Sarek **1.12** (architectural) |
+| G720+ (Dim 8400 Ultra, G725, Immortalis G720/G925) + GPL ada | 1.3 | DXVK **2.5/2.6/2.7 vanilla** (architectural, untest) |
 
-**Anti-stale rule:** JANGAN absolut bilang "Selalu Sarek di Mali" — itu stale 2024-vibe. Mali G720+ tier dengan Vulkan 1.3 + GPL = vanilla cukup. Sarek cuma fallback kalo game spesifik crash.
+**[REVEALED PREFERENCE]** community signal: StevenMXZ Winlator-Contents CDN ship DXVK 11.1-sarek-async sebagai mainline default untuk Mali. Maintainer udah test across banyak device dan pilih Sarek. Itu signal lebih kuat dari teori spec. Default kalau ga ada per-game empirical = Sarek (sesuai komunitas), BUKAN vanilla 2.x.
+
+**Confidence rules buat bot:**
+- Per-game `[VERIFIED]` preset di `per-game.md` → SELALU MENANG dari matrix manapun
+- Matrix di sini = `[THEORETICAL]` — kalau dipake, WAJIB echo ke user dengan label "ini estimasi, belum ke-test"
+- StevenMXZ CDN default Sarek = bukti komunitas, layak jadi soft-default kalau user belum ada empirical
 
 ## Exynos / Xclipse
 Sub-family Mali tapi quirky. Pake **ExynosTools** layer.

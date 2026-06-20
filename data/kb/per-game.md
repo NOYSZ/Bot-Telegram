@@ -13,10 +13,11 @@ Game spesifik yg punya quirk verified.
 ### Tier per chipset (verified community presets)
 
 **Helio G99 / Mali-G57 MC2** (Realme 11, Infinix Note 40, dll):
+**[VERIFIED — Noysz community test, GTA V DX10 1024x600 Medium = 30fps]**
 ```
 Resolution      : 1024x600
 DirectX         : 10 (force, lebih ringan dari 11)
-DXVK            : Sarek 1.10.3 / 1.11.1 (canonical), 1.12 dynasync (empirical alt)
+DXVK            : 1.7.2 async  ← verified > Sarek 1.12 (BCn emulation overhead chokes weak CPU)
 Proton          : wine-10.0-arm64ec
 FEX preset      : PERFORMANCE
 Box64 preset    : PERFORMANCE
@@ -29,10 +30,11 @@ Expected FPS    : 30 fps
 ```
 
 **Dimensity 8020-8200 / Mali-G610**:
+**[VERIFIED — community preset, GTA V baseline]**
 ```
 Resolution      : 1280x720
 DirectX         : 11
-DXVK            : Sarek 1.12 (canonical — GPL belum support di tier ini)
+DXVK            : 1.7.3 async  ← verified baseline (Sarek 1.12 = theoretical alt, belum bench)
 Proton          : Proton-10.0.99-arm64ec
 FEX preset      : PERFORMANCE
 Graphic         : Medium-High
@@ -41,10 +43,12 @@ Expected FPS    : 30-40 fps
 ```
 
 **Dimensity 8400 Ultra / Mali-G720 MC7** (POCO X7 Pro, dll):
+**[VERIFIED — community baseline, ke-test sebagai working stack]**
+**[THEORETICAL alt — DXVK 2.x vanilla architecturally plausible (Vulkan 1.3+GPL), TAPI belum ada bench public]**
 ```
 Resolution      : 1920x1080
 DirectX         : 11
-DXVK            : 2.5/2.6/2.7 vanilla (Vulkan 1.3+GPL — Sarek opsional)
+DXVK            : 1.7.3 async (verified baseline) | 2.5/2.6/2.7 vanilla (theoretical, untest)
 Proton          : Proton-10.0.99-arm64ec
 Box64 preset    : PERFORMANCE
 Box64 ver       : 0.4.1
