@@ -43,7 +43,7 @@ const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE_BYTES || String(1024 * 
 const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS || String(1000 * 60 * 60 * 6), 10);   // default 6 jam
 const SAVE_DEBOUNCE_MS = parseInt(process.env.SAVE_DEBOUNCE_MS || '5000', 10);
 const MAX_CONCURRENT_LLM = Math.max(1, parseInt(process.env.MAX_CONCURRENT_LLM || '3', 10));   // global concurrency cap
-const MAX_PHOTO_BYTES = parseInt(process.env.MAX_PHOTO_BYTES || String(6 * 1024 * 1024), 10);   // 6 MB
+const MAX_PHOTO_BYTES = parseInt(process.env.MAX_PHOTO_BYTES || String(2 * 1024 * 1024), 10);   // 2 MB (3 concurrent × base64 = ~8 MB; jangan OOM Termux)
 const MAX_FETCH_BYTES = parseInt(process.env.MAX_FETCH_BYTES || String(4 * 1024 * 1024), 10);
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -165,7 +165,13 @@ function scheduleSave() {
 function shutdown(sig) {
     console.log(`\n${sig} diterima — simpan history lalu keluar.`);
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-    saveHistory();
+    // Anti race: kalau async save lagi jalan, dia bakal write+rename tmp file
+    // sendiri. Sync save di sini bakal ngerebut tmp file dan korup. Skip.
+    if (saveInFlight) {
+        console.log('Async save in-flight, skip sync save (let async finish).');
+    } else {
+        saveHistory();
+    }
     process.exit(0);
 }
 process.on('SIGINT', () => shutdown('SIGINT'));
@@ -819,13 +825,44 @@ async function webSearch(query) {
     return 'web_search lagi ga tersedia (semua search engine nge-throttle/limit). JANGAN ulang web_search; langsung pakai web_fetch ke URL sumber yang relevan — contoh: https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf , https://www.pcgamingwiki.com/wiki/<Nama_Game> , atau halaman /releases driver yang cocok sama GPU-nya.';
 }
 
+// SSRF guard: blokir loopback, link-local (cloud metadata 169.254.169.254),
+// dan RFC-1918 private ranges. Resolve hostname via DNS dulu — kalau ada
+// 1 record yang resolve ke private IP, tolak (anti DNS-rebinding).
+const _dnsLookup = require('dns').promises.lookup;
+const _BLOCKED_NETS_V4 = [
+    /^127\./,
+    /^10\./,
+    /^192\.168\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^169\.254\./,
+    /^0\.0\.0\.0$/,
+    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,   // CGNAT 100.64.0.0/10
+];
+const _BLOCKED_NETS_V6 = [/^::1$/, /^fc/i, /^fd/i, /^fe80:/i];
+async function _isSafeUrl(rawUrl) {
+    let parsed;
+    try { parsed = new URL(rawUrl); } catch { return false; }
+    if (parsed.protocol !== 'https:') return false;     // https-only, no cleartext
+    const host = parsed.hostname.replace(/^\[|\]$/g, '');
+    let addrs;
+    try { addrs = await _dnsLookup(host, { all: true }); } catch { return false; }
+    if (!addrs.length) return false;
+    return addrs.every(({ address, family }) => {
+        const blocked = family === 4 ? _BLOCKED_NETS_V4 : _BLOCKED_NETS_V6;
+        return !blocked.some((r) => r.test(address));
+    });
+}
+
 async function webFetch(url) {
     try {
-        if (!/^https?:\/\//i.test(url)) return 'URL ga valid (harus diawali http/https).';
+        if (!(await _isSafeUrl(url))) {
+            return 'web_fetch: URL ditolak (harus HTTPS publik, bukan IP internal/private).';
+        }
         const res = await axios.get(url, {
             headers: { 'User-Agent': UA },
             timeout: 20000,
             maxContentLength: MAX_FETCH_BYTES,
+            maxRedirects: 3,
             responseType: 'text',
             transformResponse: (x) => x,
             validateStatus: () => true   // biar agent bisa baca body 403/404, ga throw mentah.
@@ -842,7 +879,9 @@ async function webFetch(url) {
         }
         return text || '(halaman kosong)';
     } catch (e) {
-        return 'web_fetch gagal: ' + e.message;
+        // JANGAN echo e.message — bisa leak IP:port/host (SSRF probe confirmation).
+        console.error('webFetch error:', e.code || e.message);
+        return 'web_fetch gagal: gagal ambil URL (timeout/network/dns).';
     }
 }
 
@@ -992,7 +1031,14 @@ async function runAgent(key, images) {
         };
     }
 
+    // Total budget agentic loop biar 1 user ga hold LLM slot 10+ menit.
+    const AGENT_DEADLINE_MS = parseInt(process.env.AGENT_DEADLINE_MS || '180000', 10);   // 3 menit
+    const deadline = Date.now() + AGENT_DEADLINE_MS;
+
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+        if (Date.now() > deadline) {
+            return '(agent timeout — pertanyaannya kompleks, persempit dulu biar gw bisa jawab lebih cepet)';
+        }
         const lastRound = round === MAX_TOOL_ROUNDS;
         if (lastRound) working.push({ role: 'system', content: 'Cukup pencariannya. Jawab SEKARANG pakai info yang sudah didapat, jangan panggil tool lagi. Sertakan URL sumber.' });
         const data = await chatCompletion(working, !lastRound, hasImage);
@@ -1010,6 +1056,8 @@ async function runAgent(key, images) {
             continue;
         }
         if (m.content && m.content.trim()) return stripThink(m.content);
+        // Empty content di lastRound = exit fallback; ga ada gunanya nge-nudge lagi.
+        if (lastRound) return '(model ngasih response kosong di round terakhir, coba kirim ulang)';
         working.push({ role: 'user', content: 'Tulis jawaban finalnya sekarang dalam teks ya.' });
     }
     return '(kebanyakan langkah pencarian, coba persempit pertanyaannya)';
@@ -1236,8 +1284,25 @@ bot.on('message', async (msg) => {
         }
         try {
             const link = await bot.getFileLink(documentToProcess.file_id);
-            const res = await axios.get(link, { responseType: 'text', maxContentLength: MAX_FILE_SIZE });
-            fileContent = `\n\n[ISI FILE]:\n${res.data}`;
+            // arraybuffer + post-download check biar binary file (renamed .exe dst)
+            // ga decode dulu ke UTF-8 jumbo string sebelum size check.
+            const res = await axios.get(link, { responseType: 'arraybuffer', maxContentLength: MAX_FILE_SIZE });
+            const buf = Buffer.from(res.data);
+            if (buf.length > MAX_FILE_SIZE) {
+                fileContent = '\n\n[File terlalu besar, ga diproses]';
+            } else {
+                // Cek kalau printable text (heuristik: 95%+ ASCII printable / whitespace).
+                let printable = 0;
+                for (let i = 0; i < buf.length; i++) {
+                    const c = buf[i];
+                    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c <= 126)) printable++;
+                }
+                if (printable / Math.max(1, buf.length) < 0.9) {
+                    fileContent = '\n\n[File binary, skip baca isi]';
+                } else {
+                    fileContent = `\n\n[ISI FILE]:\n${buf.toString('utf8')}`;
+                }
+            }
         } catch (err) {
             fileContent = '\n\n[Gagal baca file]';
         }
@@ -1269,8 +1334,9 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // 2) Link YouTube
-    const ytUrl = (promptText.match(/https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/[^\s]+|youtu\.be\/[^\s]+)/i) || [])[0];
+    // 2) Link YouTube — strip trailing punctuation supaya regex ga grab tanda baca
+    let ytUrl = (promptText.match(/https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/[^\s]+|youtu\.be\/[^\s]+)/i) || [])[0];
+    if (ytUrl) ytUrl = ytUrl.replace(/[.,;:!?)\]}"']+$/, '');
     if (ytUrl) {
         const yt = await withTyping(chatId, () => processYouTube(ytUrl));
         if (yt) {
@@ -1292,13 +1358,24 @@ bot.on('message', async (msg) => {
     if (!promptText.trim() && !fileContent && !images.length) return;
 
     if (!chatHistory[key]) chatHistory[key] = [{ role: 'system', content: SYSTEM_PROMPT }];
-    const metaTag = `[META role=${isAdmin(userId) ? 'owner' : 'user'} name=${displayName(msg.from) || 'anon'}]\n`;
-    chatHistory[key].push({ role: 'user', content: metaTag + promptText + fileContent + (images.length ? `\n[user mengirim ${images.length} gambar]` : '') });
-    while (chatHistory[key].length > MAX_HISTORY + 1) chatHistory[key].splice(1, 1);
+    // Anti META-tag spoofing: strip [META ...] block dari semua user-controlled
+    // input sebelum di-concat di belakang server-controlled metaTag asli.
+    const stripMeta = (s) => String(s || '').replace(/\[META\s[^\]]*\]/gi, '[meta-filtered]');
+    const safeName = stripMeta(displayName(msg.from) || 'anon').slice(0, 40);
+    const metaTag = `[META role=${isAdmin(userId) ? 'owner' : 'user'} name=${safeName}]\n`;
+    const safePromptText = stripMeta(promptText);
+    const safeFileContent = stripMeta(fileContent);
+    const userMsg = { role: 'user', content: metaTag + safePromptText + safeFileContent + (images.length ? `\n[user mengirim ${images.length} gambar]` : '') };
 
     inFlight.add(key);
-    await acquireLLMSlot();
+    let pushed = false;
     try {
+        await acquireLLMSlot();
+        // Push BARU setelah slot acquired — kalau acquire throw, history ga corrupt.
+        chatHistory[key].push(userMsg);
+        pushed = true;
+        while (chatHistory[key].length > MAX_HISTORY + 1) chatHistory[key].splice(1, 1);
+
         const reply = await withTyping(chatId, () => runAgent(key, images));
         const route = images.length ? `freemodel/${VISION_MODEL}` : `tokenrouter/${TEXT_MODEL}`;
         console.log(`[${key}] otak: ${route} | jawaban ${reply.length} char | inflight=${llmInFlight}/${MAX_CONCURRENT_LLM}`);
@@ -1306,9 +1383,10 @@ bot.on('message', async (msg) => {
         scheduleSave();
         await sendSafe(chatId, reply, isGroup ? { reply_to_message_id: msg.message_id } : {});
     } catch (e) {
-        const detail = e.response && e.response.data ? JSON.stringify(e.response.data).slice(0, 300) : e.message;
+        // JANGAN log response body — gateway kadang echo API key fragment di error.
+        const detail = e.response ? `HTTP ${e.response.status} from LLM provider` : (e.code || e.message);
         console.error('Error API:', detail);
-        chatHistory[key].pop();
+        if (pushed && chatHistory[key] && chatHistory[key].length) chatHistory[key].pop();
         await sendSafe(chatId, friendlyError(e));
     } finally {
         releaseLLMSlot();
