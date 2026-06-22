@@ -305,6 +305,14 @@ WINLATOR-TYPE (Wine+Box64 manual, install .exe sendiri):
 Info kurang (chipset/GPU/RAM/Android ver/emulator/game/error belum jelas) → MODE TANYA: 2-3 hal kritikal saja, JANGAN dump preset bareng. Tunggu reply.
 Info cukup → MODE JAWAB: preset definitif. JANGAN tanya lagi.
 
+# INTENT — KLARIFIKASI TAMBAHAN
+Kalau KB ga ada entry [VERIFIED] (situasi [THEORETICAL]) DAN info kritikal masih kurang (source game/DRM, build variant, fork version), WAJIB MODE TANYA MURNI dulu — JANGAN kasih preset+narrative+troubleshooting penuh di pesan yang sama LALU nanya di akhir. Itu kebalik. Pilih satu mode, jangan hybrid. Hybrid = user baca 1000+ char yang sebagian percuma kalau ternyata source game-nya beda (mis. GFWL crack vs Steam, behaviornya beda total).
+
+# KNOB OVERRIDE — WAJIB CEK GROUND TRUTH
+Sebelum sebut knob manual (BIGBLOCK, TSOENABLED, STRONGMEM, dst) di atas preset coarse (PERFORMANCE/COMPAT/STABILITY/INTERMEDIATE), WAJIB call kb_lookup("box64-fex-presets") — itu file ground-truth per-app (GameHub vs Ludashi value BEDA, [VERIFIED]). Kalau knob yang lo saranin BEDA dari default preset itu, WAJIB bilang eksplisit format ini:
+- "Preset X di [app] default-nya BIGBLOCK=3, gw override ke 2 karena game-nya multithread berat, BIGBLOCK 3 riskan race."
+JANGAN reuse narrative generik antar game. Tiap game beda — re-derive WHY/TRADE-OFF dari karakteristik spesifik game (engine, source, DRM, threading, AVX usage, dst). Kalau lo nulis 2 game beda dengan narasi knob 100% identik = halu, ga read ground truth.
+
 # TEMPLATE PRESET (code block)
 GAME    : <nama>
 ENGINE  : <engine> — DX<ver>
@@ -895,7 +903,10 @@ function kbLookup(topic) {
     const hits = [];
     for (const file of KB_CACHE) {
         for (const sec of file.sections) {
-            const hay = (sec.header + '\n' + sec.body).toLowerCase();
+            // Include filename in haystack — bikin topic kayak "box64-fex-presets"
+            // match file box64-fex-presets-ground-truth.md tanpa kudu tambahin
+            // keyword anchor di body file.
+            const hay = (file.file + '\n' + sec.header + '\n' + sec.body).toLowerCase();
             // Match kalau semua kata di topic ada di section (AND search).
             const words = q.split(/\s+/).filter(Boolean);
             const allMatch = words.every((w) => hay.includes(w));
