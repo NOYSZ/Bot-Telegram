@@ -33,9 +33,9 @@ bot.getMe().then((me) => {
     console.log(`✅  Bot @${me.username} (id ${me.id}) siap.`);
 }).catch((e) => console.error('Gagal getMe:', e.message));
 
-// Provider routing: hasImage=true → freemodel (vision), hasImage=false → tokenrouter (text-only).
+// Provider routing: both vision & text-only → freemodel (TokenRouter/MiniMax-M3 stopped free tokens 2026-06-24).
 const VISION_MODEL = process.env.VISION_MODEL || 'gpt-5.5';
-const TEXT_MODEL = process.env.TEXT_MODEL || 'MiniMax-M3';
+const TEXT_MODEL = process.env.TEXT_MODEL || 'gpt-5.5';
 
 // Tunable lewat env biar adaptif: HP low-end Termux turunin, server lega naikin.
 const MAX_HISTORY = parseInt(process.env.MAX_HISTORY || '10', 10);
@@ -974,6 +974,62 @@ function loadKB() {
     }
 }
 
+// =============================================================================
+//  PROMOTEFIX — fix write-only addfix: baca addfix.jsonl → community.md → kb_lookup
+// =============================================================================
+
+const COMMUNITY_KB = path.join(KB_DIR, 'community.md');
+
+const PROMOTE_MAX = 500;   // cap entry per promote — cegah memory spike / event-loop freeze (sec F4).
+let promoteInFlight = false;   // lock anti dua /promotefix all barengan (dup section).
+
+function readAddfix() {
+    try {
+        if (!fs.existsSync(ADDFIX_FILE)) return [];
+        return fs.readFileSync(ADDFIX_FILE, 'utf8')
+            .split('\n').filter(Boolean)
+            .map((l) => { try { return JSON.parse(l); } catch (e) { return null; } })
+            .filter(Boolean)
+            .slice(0, PROMOTE_MAX);
+    } catch (e) {
+        console.error('Gagal baca addfix:', e.message);
+        return [];
+    }
+}
+
+// Sanitasi konten user sebelum masuk KB yg di-feed LLM. Tangkis 3 vektor injeksi:
+//  1. [META] role-spoof (sama kayak guard handler).
+//  2. confidence tag palsu ([VERIFIED] dst) — user ga boleh naikin priority sort.
+//  3. markdown heading / hr — cegah body ke-split jadi section baru tanpa label di loadKB.
+function sanitizeKbBody(s) {
+    return String(s || '')
+        .replace(/\[META(?:\s[^\]]*)?\]/gi, '[meta-filtered]')
+        .replace(/\[(VERIFIED|REVEALED\s*PREF(?:ERENCE)?|THEORETICAL)[^\]]*\]/gi, '(tag-filtered)')
+        .replace(/^\s*#+\s*/gm, '')          // strip heading '#','##',...
+        .replace(/^\s*-{3,}\s*$/gm, '')        // strip '---' hr (pemisah section visual)
+        .slice(0, 2000);
+}
+
+// Tulis entry addfix ke community.md. User-content disanitasi (strip [META] anti-spoof,
+// sama kayak guard di handler) + di-cap [REVEALED PREFERENCE] biar kb_lookup ga
+// nyamain bobotnya sama ground-truth maintainer.
+function promoteAddfix(entries) {
+    fs.mkdirSync(KB_DIR, { recursive: true });   // guard: kb/ mungkin belum ada di fresh install.
+    let block = '';
+    for (const e of entries) {
+        const name = sanitizeKbBody(e.name || 'anon').replace(/\s+/g, ' ').slice(0, 40);
+        const body = sanitizeKbBody(e.content || '');
+        const date = new Date(e.ts || Date.now()).toISOString().slice(0, 10);
+        block += `\n## [COMMUNITY] kontribusi ${name} (${date})\n`
+            + `[REVEALED PREFERENCE] report real member via /addfix — bukan ground-truth maintainer, verifikasi sebelum jadiin patokan mutlak.\n`
+            + `${body}\n`;
+    }
+    const header = fs.existsSync(COMMUNITY_KB)
+        ? ''
+        : '# Community Fixes\n_Kontribusi member via /addfix, di-promote admin. Confidence: [REVEALED PREFERENCE] — real-world report, bukan maintainer ground-truth._\n';
+    fs.appendFileSync(COMMUNITY_KB, header + block);
+}
+
 // Confidence tag priority — lower number = higher priority = surfaced FIRST.
 // VERIFIED (community-tested) menang dari REVEALED PREFERENCE (community signal)
 // yang menang dari THEORETICAL (interpolasi spec, belum ke-bench).
@@ -1048,7 +1104,7 @@ async function runTool(name, args) {
 async function chatCompletion(messages, useTools, hasImage) {
     const cfg = hasImage
         ? { url: 'https://api.freemodel.dev/v1/chat/completions', key: FREEMODEL_KEY, model: VISION_MODEL }
-        : { url: 'https://api.tokenrouter.com/v1/chat/completions', key: TOKENROUTER_KEY, model: TEXT_MODEL };
+        : { url: 'https://api.freemodel.dev/v1/chat/completions', key: FREEMODEL_KEY, model: TEXT_MODEL };
     const body = { model: cfg.model, messages };
     if (useTools) { body.tools = TOOLS; body.tool_choice = 'auto'; }
     const res = await axios.post(cfg.url, body, {
@@ -1292,6 +1348,41 @@ bot.on('message', async (msg) => {
         sendSafe(chatId, `♻️ KB reloaded: ${fileCount} file, ${sectionCount} section (${ms}ms).`);
         return;
     }
+    if (cmd === '/promotefix') {
+        if (!isAdmin(userId)) { sendSafe(chatId, '🔒 Khusus admin.'); return; }
+        const pending = readAddfix();
+        if (!pending.length) { sendSafe(chatId, '📭 Ga ada addfix pending.'); return; }
+        const arg = text.replace(/^\/promotefix(@\S+)?\s*/i, '').trim().toLowerCase();
+        if (arg !== 'all') {
+            let prev = `📋 *${pending.length} addfix pending* (review dulu):\n\n`;
+            pending.forEach((e, i) => {
+                const full = String(e.content || '').replace(/\s+/g, ' ');
+                const snip = full.slice(0, 80) + (full.length > 80 ? '…' : '');
+                prev += `${i + 1}. *${e.name || 'anon'}* — ${snip}\n`;
+            });
+            prev += `\nKetik */promotefix all* buat masukin SEMUA ke community KB + reload.`;
+            sendSafe(chatId, prev);
+            return;
+        }
+        if (promoteInFlight) { sendSafe(chatId, '⏳ Promote lagi jalan, tunggu bentar.'); return; }
+        promoteInFlight = true;
+        try {
+            // Re-check tepat sebelum tulis — cegah dua admin promote isi yg sama (dup section).
+            if (!fs.existsSync(ADDFIX_FILE)) { sendSafe(chatId, '📭 Addfix udah ke-promote barusan.'); return; }
+            promoteAddfix(pending);
+            // Archive jsonl biar ga double-promote di run berikutnya.
+            fs.renameSync(ADDFIX_FILE, ADDFIX_FILE.replace(/\.jsonl$/, `.promoted.${Date.now()}.jsonl`));
+            KB_CACHE = null;
+            loadKB();
+            sendSafe(chatId, `✅ ${pending.length} fix di-promote ke *community.md* + KB reloaded. Sekarang kepake di kb_lookup.`);
+        } catch (e) {
+            console.error('promotefix gagal:', e.message);
+            sendSafe(chatId, '⚠️ Gagal promote, cek log server.');
+        } finally {
+            promoteInFlight = false;
+        }
+        return;
+    }
     if (cmd && cmd !== '/cari') return;
 
     // GATE GRUP: cuma berlaku buat pesan biasa (bukan command). /cari tetep jalan.
@@ -1440,7 +1531,11 @@ bot.on('message', async (msg) => {
         // Push BARU setelah slot acquired — kalau acquire throw, history ga corrupt.
         chatHistory[key].push(userMsg);
         pushed = true;
-        while (chatHistory[key].length > MAX_HISTORY + 1) chatHistory[key].splice(1, 1);
+        // Trim ke MAX_HISTORY pesan + system[0]. Single splice (bukan loop O(n²)),
+        // mulai index 1 biar system prompt di [0] selalu kepertahanin.
+        if (chatHistory[key].length > MAX_HISTORY + 1) {
+            chatHistory[key].splice(1, chatHistory[key].length - (MAX_HISTORY + 1));
+        }
 
         // ponytail: observability buat recency-anchor. Log 2 user-turn terakhir verbatim,
         // nol heuristik — reviewer yang nilai apakah jawaban bleed topik lama pas credit balik.
@@ -1453,7 +1548,7 @@ bot.on('message', async (msg) => {
         }
 
         const reply = await withTyping(chatId, () => runAgent(key, images));
-        const route = images.length ? `freemodel/${VISION_MODEL}` : `tokenrouter/${TEXT_MODEL}`;
+        const route = images.length ? `freemodel/${VISION_MODEL}` : `freemodel/${TEXT_MODEL}`;
         console.log(`[${key}] otak: ${route} | jawaban ${reply.length} char | inflight=${llmInFlight}/${MAX_CONCURRENT_LLM}`);
         chatHistory[key].push({ role: 'assistant', content: reply });
         scheduleSave();
