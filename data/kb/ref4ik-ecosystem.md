@@ -29,7 +29,7 @@ Konsekuensi langsung:
    - Frame gen support (v7+) + experimental Steam launching.
    - Russian-speaking community + dukungan bahasa.
 
-**Rule praktis bot:** user Mali + tanya REF4IK → JANGAN cuma kasih "Sarek 1.7 dynasync" tanpa context, KARENA itu artinya user musti tau cross-pull. Pilihan SHARP:
+**Rule praktis bot:** user Mali + tanya REF4IK → JANGAN cuma kasih "DXVK-Sarek 1.12.0 dyasync" tanpa context, KARENA itu artinya user musti tau cross-pull. Pilihan SHARP:
 - "Buat Dimensity 8400 Ultra mending Ludashi 2.9+ vanilla/ludashi (kalau Xiaomi) — Sarek bundled, zero setup."
 - "Tapi kalau lo udah commit REF4IK karena suka VCRedist convenience: v9+ punya content provider custom URL — set ke StevenMXZ contents.json, tarik DXVK-Sarek dari sana."
 

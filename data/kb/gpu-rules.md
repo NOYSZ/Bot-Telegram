@@ -55,8 +55,8 @@ Mali Valhall TIER LAMA secara native miss:
 **[THEORETICAL]** Decision matrix (interpolasi spec Mali + DXVK feature reqs — **BELUM** dari bench database):
 | Mali tier | Vulkan | DXVK (theoretical) |
 |-----------|--------|--------------------|
-| Valhall awal (G57, G68, Helio G99) | 1.1/1.2 | Sarek **1.10.3 / 1.11.1** (architectural) |
-| G610/G715 (Dim 8020-8200) + GPL belum support | 1.2 | Sarek **1.12** (architectural) |
+| Valhall awal (G57, G68, Helio G99) | 1.1/1.2 | Sarek **1.11.0 / 1.12.0** (architectural) |
+| G610/G715 (Dim 8020-8200) + GPL belum support | 1.2 | Sarek **1.12.0** (architectural) |
 | G720+ (Dim 8400 Ultra, G725, Immortalis G720/G925) + GPL ada | 1.3 | DXVK **2.5/2.6/2.7 vanilla** (architectural, untest) |
 
 **[REVEALED PREFERENCE]** community signal: StevenMXZ Winlator-Contents CDN ship DXVK 11.1-sarek-async sebagai mainline default untuk Mali. Maintainer udah test across banyak device dan pilih Sarek. Itu signal lebih kuat dari teori spec. Default kalau ga ada per-game empirical = Sarek (sesuai komunitas), BUKAN vanilla 2.x.
