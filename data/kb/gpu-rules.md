@@ -7,7 +7,7 @@
 ## DirectX translation layer
 - DX9 / DX10 / DX11 → **DXVK** (Mali: pakai Sarek branch).
 - DX12 → **VKD3D-Proton**.
-- DX8 (SH2/3 era 2001-03) → **d3d8to9 wrapper** → DXVK.
+- DX8 (SH2/3 era 2001-03) → **DXVK 2.4+** (d8vk udah merged — d3d8to9 standalone redundant, lihat kb_lookup("evolution")).
 
 ---
 
@@ -27,7 +27,7 @@
 - **Wine/Proton**: **Proton-arm64ec** (Proton port khusus ARM64EC). Versi: `Proton-10.0.99-arm64ec`, `wine-10.0-arm64ec`.
 - **CPU translator**:
   - GameHub/BannerHub → **FEX** (versi 202510, 202604, dll — cek release).
-  - Winlator → **Box64** (versi 0.4.1).
+  - Winlator → **Box64** (versi 0.4.2, current — cek kb_lookup("evolution") buat timeline).
 - **Preset preset**: di GameHub/BannerHub mostly **PERFORMANCE / EXTREME** (bukan Compatibility lagi — Compatibility outdated default).
 - **Winlator fork populer Mali**: **Star Bionic 1.1 (Ludashi variant)**, **Ludashi 2.9 beta**.
 

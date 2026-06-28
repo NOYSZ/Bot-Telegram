@@ -41,7 +41,6 @@ File ini = peta. Tiap topik linked ke file detail di folder yg sama.
   (Halo CE, SH2 EE, Sims 2, Gothic 3, AquaNox), + DXVK 2.x mobile baseline preset.
   **PAKE FILE INI** kalau user nanya: "DXVK 2.x bisa di Mali ga", "graphicsPipelineLibrary apa",
   "kenapa game DX8 jalan tanpa d8vk", "spoof GPU ke Nvidia gimana", knob spesifik per-game.
-- `dxvk-version-per-chipset.md` — DXVK versi mana buat Adreno/Mali apa.
 
 ## VKD3D-Proton (DX12 → Vulkan)
 - `vkd3d.md` — VKD3D_CONFIG, feature level, RE4 setup.
@@ -85,6 +84,7 @@ File ini = peta. Tiap topik linked ke file detail di folder yg sama.
 
 ## GPU / Driver
 - `gpu-rules.md` — Mali vs Adreno hard rule, GPU spoofing, BCn/ClipDistance limitation.
+- `chipset-gpu-map.md` — mapping chipset HP (Snapdragon/Dimensity/Helio) → vendor GPU (Adreno/Mali/IMG) → stack rendering. **WAJIB cek file ini DULU** sebelum nentuin DXVK-Sarek vs Turnip — chipset Dimensity 7020/7025 itu jebakan (IMG, bukan Mali).
 - `turnip-per-adreno.md` — repo Turnip driver per chipset Adreno.
 
 ## Per-game tweak

@@ -151,33 +151,33 @@ Jangan campur. Beda repo, beda versi, beda target hardware:
 - 3DNow! di-disable di Wine WOW64 (banyak game game old false-detect 3DNow).
 - Mobile take: kalau user mention "Wine WOW64 game lawas false-CPU-detect" → versi 2305+ udah handle.
 
-### FEX-2510 (Oct 2023) — INFLECTION
+### FEX-2510 (Oct 2025) — INFLECTION
 - **x87 intermediate result caching** di slow path → 2-3x instruction reduction. Game pakai math FP87 (lawas) langsung jauh lebih cepet.
 - FEXInterpreter rename → FEX (cleanup).
 - Mobile take: **upgrade ke 2510+ KASIH FREE PERF 2-3x** di game-game older. Major leap.
 
-### FEX-2511 (Nov 2023)
+### FEX-2511 (Nov 2025)
 - **AVX di 32-bit default ON** (sebelumnya cuma 64-bit).
 - WritePriorityMutex.
 - L1/L2 cache memory optimization.
 - Mobile take: game 32-bit yang ngotot AVX → 2511+ langsung jalan tanpa tweak.
 
-### FEX-2512 (Dec 2023)
+### FEX-2512 (Dec 2025)
 - io_uring syscall DISABLED (workaround Termux yang sering kacau).
 - FEAT_LRCPC2 errata handling.
 - Mobile take: **kalau user di Termux/proot pernah lihat "io_uring" error → upgrade ke 2512+**.
 
-### FEX-2603 (Mar 2024)
+### FEX-2603 (Mar 2026)
 - **RPMalloc allocator integration** — memory footprint turun drastis.
 - vzeroupper via DC ZVA optimization.
 - Mobile take: **OOM kill di HP <6GB → upgrade ke 2603+**, RAM consumption drop signifikan.
 
-### FEX-2604 (Apr 2024)
+### FEX-2604 (Apr 2026)
 - **Dynamic L1 cache** + L2 disabled by default → memory turun lagi.
 - **x87 transcendental inlining → 3.7x speedup**.
 - Mobile take: kombinasi 2603 + 2604 = best FEX buat HP RAM ketat.
 
-### FEX-2605 (May 2024) — current bundled di emulator modern
+### FEX-2605 (May 2026) — current bundled di emulator modern
 - Snapdragon X2 Elite improvements + atomic split-lock emulation.
 - ARM64EC controller crash fixes.
 - CLZERO support.
